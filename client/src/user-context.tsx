@@ -14,6 +14,7 @@ interface UserContextProps {
   setClient: (client: StreamVideoClient | undefined) => void;
   call:Call | undefined;
   setCall: (call: Call | undefined) => void;
+  isLoadingClient:boolean;
 }
 
 const UserContext = createContext<UserContextProps | undefined>(undefined);
@@ -26,6 +27,7 @@ export const UserProvider = (props: UserProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [call, setCall] = useState<Call>();
   const [client, setClient] = useState<StreamVideoClient>();
+  const [isLoadingClient,setIsLoadingClient] = useState<boolean>(true);
 
   const cookies = new Cookies();
   useEffect(()=>{
@@ -33,7 +35,10 @@ export const UserProvider = (props: UserProviderProps) => {
     const name =cookies.get("name");
     const username =cookies.get("username");
 
-    if(!token || !name || !username) return;
+    if(!token || !name || !username) {
+      setIsLoadingClient(false);
+      return;
+    }
 
     const user: StreamUserType = {
       id : username,
@@ -48,6 +53,7 @@ export const UserProvider = (props: UserProviderProps) => {
 
     setClient(myClient);
     setUser({username,name});
+    setIsLoadingClient(false);
 
     return ()=>{
       myClient.disconnectUser();
@@ -57,7 +63,7 @@ export const UserProvider = (props: UserProviderProps) => {
   },[]);
 
   return (
-    <UserContext.Provider value={{ user, setUser, client, setClient,call,setCall }}>
+    <UserContext.Provider value={{ user, setUser, client, setClient,call,setCall,isLoadingClient }}>
       {props.children}
     </UserContext.Provider>
   );
