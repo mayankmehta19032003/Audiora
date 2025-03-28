@@ -1,5 +1,6 @@
-import { StreamVideoClient } from "@stream-io/video-react-sdk";
-import { createContext, ReactNode, useContext, useState } from "react";
+import { Call, StreamVideoClient, User as StreamUserType } from "@stream-io/video-react-sdk";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import Cookies from "universal-cookie";
 
 interface User {
   username: string;
@@ -11,6 +12,8 @@ interface UserContextProps {
   setUser: (user: User | null) => void;
   client: StreamVideoClient | undefined;
   setClient: (client: StreamVideoClient | undefined) => void;
+  call:Call | undefined;
+  setCall: (call: Call | undefined) => void;
 }
 
 const UserContext = createContext<UserContextProps | undefined>(undefined);
@@ -21,10 +24,40 @@ interface UserProviderProps {
 
 export const UserProvider = (props: UserProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
+  const [call, setCall] = useState<Call>();
   const [client, setClient] = useState<StreamVideoClient>();
 
+  const cookies = new Cookies();
+  useEffect(()=>{
+    const token =cookies.get("token");
+    const name =cookies.get("name");
+    const username =cookies.get("username");
+
+    if(!token || !name || !username) return;
+
+    const user: StreamUserType = {
+      id : username,
+      name,
+    };
+
+    const myClient = new StreamVideoClient({
+      apiKey: "d2qvzha7rg9z",
+      user,
+      token,
+    });
+
+    setClient(myClient);
+    setUser({username,name});
+
+    return ()=>{
+      myClient.disconnectUser();
+      setClient(undefined);
+      setUser(null);
+    }
+  },[]);
+
   return (
-    <UserContext.Provider value={{ user, setUser, client, setClient }}>
+    <UserContext.Provider value={{ user, setUser, client, setClient,call,setCall }}>
       {props.children}
     </UserContext.Provider>
   );
